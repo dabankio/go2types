@@ -1,15 +1,16 @@
 package main
 
 import (
-	"github.com/dabankio/go2types"
-	"github.com/dabankio/go2types/example/types"
-	"github.com/dabankio/go2types/example/user"
+	"example/types"
+	"example/user"
+	"local/go2types"
+
 	"reflect"
 )
 
 func main() {
 	go2types.CustomTypeMap = map[reflect.Kind]string{
-		reflect.TypeOf(user.XTime{}).Kind(): "number",
+		reflect.TypeOf(user.XTime{}).Kind(): "number", //XTime will be mapped to typescript type number
 	}
 
 	w := go2types.NewWorker()

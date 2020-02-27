@@ -14,7 +14,7 @@ import (
 const (
 	DefaultStructTemplate = `
   //{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
-  //{{.Doc}}{{end}}
+  /*** {{.Doc}} */{{end}}
   export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
 {{range .Fields}}    {{.MustRender}}{{end}}  }
 `

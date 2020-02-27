@@ -17,46 +17,21 @@
 - run this code with `go run`
 
 ```golang
-package main
-
-import (
-  "github.com/dabankio/go2types"
-   // you can use your own
-  "github.com/dabankio/go2types/example/types"
-)
-
-type Root struct {
-	User types.User
-	T    types.T
-}
-
 func main() {
-	s := go2types.New()
-	s.Add(types.T{})
-	s.Add(types.User{})
-
-	err := s.GenerateFile("./test.ts")
-	if err != nil {
-		panic(err)
+	go2types.CustomTypeMap = map[reflect.Kind]string{
+		reflect.TypeOf(user.XTime{}).Kind(): "number", //XTime will be mapped to typescript type number
 	}
+
+	w := go2types.NewWorker()
+	w.Namespace = "types"
+	w.Add(types.T{}, types.User{})
+	w.Add(user.Person{})
+	w.MustGenerateFile("./types.ts")
 }
 ```
 
-# Custom tags
 
-we support custom tag `ts` it has the following syntax
+## doc
 
-```
-type M struct {
-	Username string `json:"Username2" ts:"string,optional"`
-}
-```
-
-tsTag type
-
-```
-tsTag[0] = "string"|"date"|"-"
-tsTag[1] = "optional"|"no-null"|"null"
-```
-
-see field.go for more info
+todo
+- doc

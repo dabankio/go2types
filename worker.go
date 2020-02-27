@@ -101,9 +101,6 @@ func (s *Worker) addType(t reflect.Type, name, namespace string) (out *Struct) {
 	return
 }
 
-// GetTypeName .
-type GetTypeName = func(t reflect.Type) string
-
 // TypescriptEnumMember .
 type TypescriptEnumMember struct {
 	Name    string
@@ -131,9 +128,7 @@ func (s *Worker) visitType(t reflect.Type, name, namespace string) {
 		s.visitType(t.Elem(), name, namespace)
 		s.visitType(t.Key(), name, namespace)
 	case (isNumber(k) || k == reflect.String) && isEnum(t):
-		{
-			s.addTypeEnum(t, "", "")
-		}
+		s.addTypeEnum(t, "", "")
 	}
 }
 
@@ -150,18 +145,10 @@ func (s *Worker) addTypeEnum(t reflect.Type, name, namespace string) (out *Struc
 	return
 }
 
-func (s *Worker) getTypeName(t reflect.Type) string {
-	if s, ok := s.seen[t]; ok {
-		return s.ReferenceName
-	}
-	panic("not ok: " + t.Name())
-}
-
 // RenderTo .
 func (s *Worker) RenderTo(w io.Writer) error {
 	ctx := WorkerRenderContext{
-		FileDoc: `/* tslint:disable */
-/* eslint-disable */`,
+		FileDoc:   DefaultFileDoc,
 		Namespace: s.Namespace,
 		Ident:     "  ",
 		Structs:   s.structs,

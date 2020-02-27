@@ -1,4 +1,4 @@
-package go2typings
+package go2types
 
 import (
 	"bytes"

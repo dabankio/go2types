@@ -1,17 +1,20 @@
 package main
 
 import (
-	"github.com/zmitry/go2typings"
-	"github.com/zmitry/go2typings/example/types"
+	"github.com/dabankio/go2types"
+	"github.com/dabankio/go2types/example/types"
+	"github.com/dabankio/go2types/example/user"
+	"reflect"
 )
 
 func main() {
-	s := go2typings.New()
-	s.Add(types.T{})
-	s.Add(types.User{})
-
-	err := s.GenerateFile("./types.ts")
-	if err != nil {
-		panic(err)
+	go2types.CustomTypeMap = map[reflect.Kind]string{
+		reflect.TypeOf(user.XTime{}).Kind(): "number",
 	}
+
+	w := go2types.NewWorker()
+	w.Namespace = "types"
+	w.Add(types.T{}, types.User{})
+	w.Add(user.Person{})
+	w.MustGenerateFile("./types.ts")
 }

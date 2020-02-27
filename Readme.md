@@ -1,8 +1,15 @@
 # Golang structs to typescript typings convertor
 
+## TODO
+- map type
+- more customable namespace
+- tests
+- type embed (inherit)
+- not generate some type
+
 ## Example
 
-[example.main.go](https://github.com/zmitry/go2typings/blob/master/example/main.go)
+[example/main.go](example/main.go)
 
 ## How to setup
 
@@ -13,9 +20,9 @@
 package main
 
 import (
-  "github.com/zmitry/go2ts"
+  "github.com/dabankio/go2types"
    // you can use your own
-  "github.com/zmitry/go2ts/example/types"
+  "github.com/dabankio/go2types/example/types"
 )
 
 type Root struct {
@@ -24,7 +31,7 @@ type Root struct {
 }
 
 func main() {
-	s := go2ts.New()
+	s := go2types.New()
 	s.Add(types.T{})
 	s.Add(types.User{})
 

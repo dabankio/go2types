@@ -90,8 +90,9 @@ func (s *Worker) addType(t reflect.Type, name, namespace string) (out *Struct) {
 		}
 
 		if sf.Anonymous && sf.Type.Kind() == reflect.Struct {
-			extendsType := s.seen[sf.Type].Name
-			out.InheritedType = append(out.InheritedType, extendsType)
+
+			// extendsType := s.seen[sf.Type].Name
+			out.InheritedType = append(out.InheritedType, sf.Type.Name())
 			continue
 		}
 		out.Fields = append(out.Fields, parsedField)

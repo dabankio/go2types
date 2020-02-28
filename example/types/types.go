@@ -48,3 +48,8 @@ type User struct {
 	SecondName string    `json:"secondName"`
 	Tags       []UserTag `json:"tags"`
 }
+
+type UserDetail struct {
+	User
+	Age int
+}

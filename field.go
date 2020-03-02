@@ -9,7 +9,7 @@ import (
 
 // some const
 const (
-	DefaultFieldTemplate = `{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}}//{{.Doc}}{{end}}`
+	DefaultFieldTemplate = `{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}} // {{.Doc}}{{end}}`
 )
 
 // Field field of struct
@@ -46,7 +46,7 @@ func (t TagJSON) defaultIfNameEmpty(name string) string {
 }
 
 // ParseField return: parsed field, isAnomynous, isStruct
-func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Kind]string) *Field {
+func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Type]string) *Field {
 	tagJSON := parseTagJSON(sf.Tag.Get("json"))
 
 	typ, kind := sf.Type, sf.Type.Kind()
@@ -58,9 +58,10 @@ func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Kind]string) *Fie
 		IsOptional: tagJSON.Exists && tagJSON.Omitempty,
 		CanBeNull:  !tagJSON.Omitempty && (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map),
 		IsDate:     isDate(typ),
+		Doc:        structFieldTags(sf),
 	}
 
-	if v, ok := go2tsTypes[kind]; ok {
+	if v, ok := go2tsTypes[typ]; ok {
 		f.TsType = v
 	} else {
 		f.TsType = toTypescriptType(typ)
@@ -68,12 +69,6 @@ func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Kind]string) *Fie
 
 	if !tagJSON.Exists {
 		f.TsType = sf.Name
-	}
-
-	for _, t := range DocTags {
-		if v := sf.Tag.Get(t); v != "" {
-			f.Doc = fmt.Sprintf("%s:%s, %s", t, v, f.Doc)
-		}
 	}
 	return &f
 }

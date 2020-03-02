@@ -174,3 +174,13 @@ func hasLowerCasePrefix(s string) bool {
 	}
 	return s[0] >= 'a' && s[0] <= 'z' // return strings.ToLower(s[:1]) == s[:1]
 }
+
+func structFieldTags(sf reflect.StructField) string {
+	var tags []string
+	for _, tag := range DocTags {
+		if t := sf.Tag.Get(tag); t != "" {
+			tags = append(tags, fmt.Sprintf("%s:%v", tag, t))
+		}
+	}
+	return strings.Join(tags, ", ")
+}

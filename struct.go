@@ -2,7 +2,6 @@ package go2types
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"path"
 	"reflect"
@@ -73,11 +72,7 @@ func MakeStruct(t reflect.Type, name, namespace string) *Struct {
 
 	if t.Kind() == reflect.Struct {
 		if docField, ok := t.FieldByName(DocField); ok {
-			for _, t := range DocTags {
-				if v := docField.Tag.Get(t); v != "" {
-					ret.Doc = fmt.Sprintf("%s:%s, %s", t, v, ret.Doc)
-				}
-			}
+			ret.Doc = structFieldTags(docField)
 		}
 	}
 	return ret

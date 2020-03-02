@@ -40,11 +40,11 @@ export namespace types {
   }
 
   //example/user.Person
-  /*** some document for type person */
+  /*** doc:some document for type person,  */
   export interface Person {
     Name: string | null;
     nickname?: string;
-    Age: number;//some document for field age
+    Age: number;//doc:some document for field age, 
     estates: Array<PersonEstate> | null;
   }
 

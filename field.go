@@ -9,8 +9,7 @@ import (
 
 // some const
 const (
-	DefaultFieldTemplate = `{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}}//{{.Doc}}{{end}}
-` //a new line in the end
+	DefaultFieldTemplate = `{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}}//{{.Doc}}{{end}}`
 )
 
 // Field field of struct
@@ -50,22 +49,18 @@ func (t TagJSON) defaultIfNameEmpty(name string) string {
 func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Kind]string) *Field {
 	tagJSON := parseTagJSON(sf.Tag.Get("json"))
 
-	typ := sf.Type
-
+	typ, kind := sf.Type, sf.Type.Kind()
 	f := Field{
 		Anomynous:  sf.Anonymous,
-		Doc:        sf.Tag.Get(DocTag),
 		T:          typ,
 		Omitted:    tagJSON.Omitted || hasLowerCasePrefix(sf.Name),
 		Name:       tagJSON.defaultIfNameEmpty(sf.Name),
 		IsOptional: tagJSON.Exists && tagJSON.Omitempty,
-		CanBeNull:  typ.Kind() == reflect.Ptr && !tagJSON.Omitempty, //TODO consider map, slice...
+		CanBeNull:  !tagJSON.Omitempty && (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map),
 		IsDate:     isDate(typ),
-		// TsType will be setted later
 	}
 
-	k := typ.Kind()
-	if v, ok := go2tsTypes[k]; ok {
+	if v, ok := go2tsTypes[kind]; ok {
 		f.TsType = v
 	} else {
 		f.TsType = toTypescriptType(typ)
@@ -73,6 +68,12 @@ func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Kind]string) *Fie
 
 	if !tagJSON.Exists {
 		f.TsType = sf.Name
+	}
+
+	for _, t := range DocTags {
+		if v := sf.Tag.Get(t); v != "" {
+			f.Doc = fmt.Sprintf("%s:%s, %s", t, v, f.Doc)
+		}
 	}
 	return &f
 }
@@ -83,9 +84,8 @@ func (f *Field) MustRender() string {
 	if t == "" {
 		t = DefaultFieldTemplate
 	}
-	tpl := template.Must(template.New("field_tpl").Parse(t))
 	buffer := bytes.NewBuffer(nil)
-	err := tpl.Execute(buffer, f)
+	err := template.Must(template.New("field_tpl").Parse(t)).Execute(buffer, f)
 	if err != nil {
 		panic(fmt.Errorf("template execute error, %v", err))
 	}

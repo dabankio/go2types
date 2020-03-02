@@ -127,7 +127,7 @@ func toTypescriptType(t reflect.Type) string {
 	case k == reflect.Bool:
 		return "boolean"
 	case k == reflect.Slice || k == reflect.Array:
-		return fmt.Sprintf("Array<%s> | null", toTypescriptType(t.Elem()))
+		return fmt.Sprintf("Array<%s>", toTypescriptType(t.Elem()))
 	case k == reflect.Interface || t == jsonRawMessageType:
 		return "any"
 	case k == reflect.Map:
@@ -169,5 +169,8 @@ func getEnumStringValues(t reflect.Type) []string {
 }
 
 func hasLowerCasePrefix(s string) bool {
-	return strings.ToLower(s[:1]) == s[:1]
+	if s == "" {
+		return false
+	}
+	return s[0] >= 'a' && s[0] <= 'z' // return strings.ToLower(s[:1]) == s[:1]
 }

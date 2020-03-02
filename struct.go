@@ -2,6 +2,7 @@ package go2types
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"path"
 	"reflect"
@@ -16,7 +17,8 @@ const (
   //{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
   /*** {{.Doc}} */{{end}}
   export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
-{{range .Fields}}    {{.MustRender}}{{end}}  }
+{{range .Fields}}    {{.MustRender}}
+{{end}}  }
 `
 
 	DefaultEnumTemplate = `
@@ -71,7 +73,11 @@ func MakeStruct(t reflect.Type, name, namespace string) *Struct {
 
 	if t.Kind() == reflect.Struct {
 		if docField, ok := t.FieldByName(DocField); ok {
-			ret.Doc = docField.Tag.Get(DocTag)
+			for _, t := range DocTags {
+				if v := docField.Tag.Get(t); v != "" {
+					ret.Doc = fmt.Sprintf("%s:%s, %s", t, v, ret.Doc)
+				}
+			}
 		}
 	}
 	return ret

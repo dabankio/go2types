@@ -12,13 +12,13 @@ import (
 
 // default template
 const (
-	DefaultStructTemplate = `
+	DefaultStructTemplate = `{{if .NotIgnored}}
   //{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
   /*** {{.Doc}} */{{end}}
   export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
 {{range .Fields}}    {{.MustRender}}
 {{end}}  }
-`
+{{end}}`
 
 	DefaultEnumTemplate = `
   //{{.T.PkgPath}}.{{.T.Name}}
@@ -51,6 +51,16 @@ type (
 		T             reflect.Type
 	}
 )
+
+// NotIgnored struct not ignored would be rendered
+func (ctx *Struct) NotIgnored() bool {
+	for _, typ := range IgnoreTypes {
+		if ctx.T == typ {
+			return false
+		}
+	}
+	return true
+}
 
 // MakeStruct .
 func MakeStruct(t reflect.Type, name, namespace string) *Struct {

@@ -36,8 +36,9 @@ type WorkerRenderContext struct {
 // Worker .
 type Worker struct {
 	Namespace string
-	structs   []*Struct
-	seen      map[reflect.Type]*Struct
+
+	structs []*Struct
+	seen    map[reflect.Type]*Struct
 }
 
 // Add .

@@ -12,9 +12,9 @@ import (
 const (
 	DefaultWorkerTemplate = `{{.FileDoc}}
 
-export namespace {{.Namespace}} {
+{{if .Namespace}}export namespace {{.Namespace}} { {{end}}
 {{range .Structs}}{{.MustRender}}{{end}}
-}
+{{if .Namespace}}}{{end}}
 `
 )
 
@@ -72,9 +72,14 @@ func (s *Worker) addType(t reflect.Type, name, namespace string) (out *Struct) {
 	out = MakeStruct(t, name, namespace)
 	fullName := out.Name
 	out.Type = RegularType
-	out.Fields = make([]*Field, 0, t.NumField())
+
+	var numField int
+	if t.Kind() == reflect.Struct {
+		numField = t.NumField()
+		out.Fields = make([]*Field, 0, numField)
+	}
 	s.seen[t] = out
-	for i := 0; i < t.NumField(); i++ {
+	for i := 0; i < numField; i++ {
 		sf := t.Field(i)
 
 		parsedField := ParseField(sf, CustomTypeMap)
@@ -130,17 +135,18 @@ func (s *Worker) visitType(t reflect.Type, name, namespace string) {
 		s.visitType(t.Elem(), name, namespace)
 		s.visitType(t.Key(), name, namespace)
 	case (isNumber(k) || k == reflect.String) && isEnum(t):
-		s.addTypeEnum(t, "", "")
+		s.AddTypeEnum(t, "", "")
 	}
 }
 
-func (s *Worker) addTypeEnum(t reflect.Type, name, namespace string) (out *Struct) {
+// AddTypeEnum add enum
+func (s *Worker) AddTypeEnum(t reflect.Type, name, namespace string, pkgNames ...string) (out *Struct) {
 	t = indirect(t)
 	if out = s.seen[t]; out != nil {
 		return out
 	}
 	out = MakeStruct(t, name, namespace)
-	out.Values = getEnumStringValues(t)
+	out.Values = getEnumStringValues(t, pkgNames...)
 	out.Type = Enum
 	s.seen[t] = out
 	s.structs = append(s.structs, out)
@@ -154,6 +160,18 @@ func (s *Worker) RenderTo(w io.Writer) error {
 		Namespace: s.Namespace,
 		Ident:     "  ",
 		Structs:   s.structs,
+	}
+
+	classBlockIndent := DefaultIndent
+	if s.Namespace == "" {
+		classBlockIndent = ""
+	}
+	fieldIndent := classBlockIndent + DefaultIndent
+	for i := 0; i < len(ctx.Structs); i++ {
+		ctx.Structs[i].Indent = classBlockIndent
+		for j := 0; j < len(ctx.Structs[i].Fields); j++ {
+			ctx.Structs[i].Fields[j].Indent = fieldIndent
+		}
 	}
 	return template.Must(template.New("worker_tpl").Parse(DefaultWorkerTemplate)).Execute(w, ctx)
 }

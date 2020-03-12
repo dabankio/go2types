@@ -11,19 +11,20 @@ import (
 )
 
 // default template
-const (
+var (
 	DefaultStructTemplate = `{{if .NotIgnored}}
-  //{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
-  /*** {{.Doc}} */{{end}}
-  export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
-{{range .Fields}}    {{.MustRender}}
-{{end}}  }
+{{.Indent}}//{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
+{{.Indent}}/*** {{.Doc}} */{{end}}
+{{.Indent}}export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
+{{range .Fields}}{{.MustRender}}
+{{end}}{{.Indent}}}
 {{end}}`
 
 	DefaultEnumTemplate = `
-  //{{.T.PkgPath}}.{{.T.Name}}
-  export type {{.Name}} = {{.JoinEnumValues}};
-`
+{{.Indent}}//{{.T.PkgPath}}.{{.T.Name}}
+{{.Indent}}export enum {{.Name}} {
+{{$e := .}}{{range .Values}}{{$e.Indent}}  {{.}} = '{{.}}',
+{{end}}{{.Indent}}}`
 )
 
 // .
@@ -38,8 +39,8 @@ type (
 	// Struct represent struct should be converted to typescript interface
 	Struct struct {
 		// Template          string //render template
-		RenderFieldIndent string
-		Doc               string
+		Indent string //whole block indent
+		Doc         string
 
 		Type          Kind
 		ReferenceName string

@@ -9,14 +9,15 @@ import (
 
 // some const
 const (
-	DefaultFieldTemplate = `{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}} // {{.Doc}}{{end}}`
+	DefaultFieldTemplate = `{{.Indent}}{{.Name}}{{if .IsOptional}}?{{end}}: {{.TsType}}{{if .CanBeNull}} | null{{end}};{{if .Doc}} // {{.Doc}}{{end}}`
 )
 
 // Field field of struct
 type Field struct {
-	Template  string //render template
-	Anomynous bool
-	Omitted   bool //is field ignored, name start with lower case OR json:"-"
+	Template   string //render template
+	Indent string
+	Anomynous  bool
+	Omitted    bool //is field ignored, name start with lower case OR json:"-"
 
 	Doc        string
 	Name       string `json:"name"`

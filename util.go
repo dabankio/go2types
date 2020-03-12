@@ -138,32 +138,37 @@ func toTypescriptType(t reflect.Type) string {
 	return t.String()
 }
 
-func getEnumStringValues(t reflect.Type) []string {
-	pkg := t.PkgPath()
-	values, err := getEnumValues(pkg, t.String())
-	if err != nil {
-		panic(err)
+func getEnumStringValues(t reflect.Type, pkgNames ...string) []string {
+	if len(pkgNames) == 0 {
+		pkgNames = []string{t.PkgPath()}
 	}
-	enumStrValues := []string{}
-	for _, v := range values {
-		reflectValue := reflect.New(t).Elem()
-		newVal := constant.Val(v)
-		switch t.Kind() {
-		case reflect.String:
-			reflectValue.SetString(constant.StringVal(v))
-		case reflect.Int:
-			value, ok := constant.Int64Val(v)
-			if !ok {
-				panic("failed to convert")
-			}
-			reflectValue.SetInt(value)
-		default:
-			fmt.Println(reflect.TypeOf(newVal), newVal, reflectValue, v.Kind(), t)
-			panic("unknown type")
-		}
-		strVal := fmt.Sprintf("%v", reflectValue)
 
-		enumStrValues = append(enumStrValues, strVal)
+	enumStrValues := []string{}
+	for _, pkg := range pkgNames {
+		values, err := getEnumValues(pkg, t.String())
+		if err != nil {
+			panic(err)
+		}
+		for _, v := range values {
+			reflectValue := reflect.New(t).Elem()
+			newVal := constant.Val(v)
+			switch t.Kind() {
+			case reflect.String:
+				reflectValue.SetString(constant.StringVal(v))
+			case reflect.Int:
+				value, ok := constant.Int64Val(v)
+				if !ok {
+					panic("failed to convert")
+				}
+				reflectValue.SetInt(value)
+			default:
+				fmt.Println(reflect.TypeOf(newVal), newVal, reflectValue, v.Kind(), t)
+				panic("unknown type")
+			}
+			strVal := fmt.Sprintf("%v", reflectValue)
+
+			enumStrValues = append(enumStrValues, strVal)
+		}
 	}
 	return enumStrValues
 }

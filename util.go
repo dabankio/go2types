@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/ast"
 	"go/constant"
 	"go/types"
 	"path"
@@ -67,21 +68,49 @@ func isEnum(t reflect.Type) bool {
 	return t.PkgPath() != ""
 }
 
-func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
+type constantValueDoc struct {
+	constant.Value
+	doc string
+}
+
+func getEnumValues(pkgName, typename string) ([]constantValueDoc, error) {
 	res, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedName | packages.LoadSyntax | packages.NeedSyntax,
 	}, pkgName)
 	if err != nil {
 		return nil, err
 	}
-	enums := []constant.Value{}
+	enums := []constantValueDoc{}
 	if len(res) > 1 {
 		return nil, errors.New("more than one result package")
 	}
+
+	docMap := map[string]string{} //doc map, <enumName, doc>
+	for _, f := range res[0].Syntax {
+		for _, decl := range f.Decls {
+			switch decl := decl.(type) {
+			case *ast.GenDecl:
+				for _, spec := range decl.Specs {
+					switch spec := spec.(type) {
+					case *ast.TypeSpec:
+						// fmt.Println("[dbg] try get doc", spec.Name, toJSON(spec.Doc))
+					case *ast.ValueSpec:
+						if spec.Doc.Text() != "" {
+							// fmt.Println("[dbg] try get doc", typename, spec.Names, spec.Doc.Text())
+							for _, name := range spec.Names {
+								docMap[name.Name] = strings.TrimSpace(spec.Doc.Text())
+							}
+						}
+					}
+				}
+			case *ast.FuncDecl:
+				// fmt.Println("[dbg] try get doc:", toJSON(decl.Doc))
+			}
+		}
+	}
+
 	pkg := res[0].Types.Scope()
 	// fmt.Println("dbg pkg.Names", pkg.Names())
-	info := res[0].TypesInfo
-	_ = info
 	// fmt.Println("[dbg] info.Types ", info.Types)
 	for _, name := range pkg.Names() {
 		v := pkg.Lookup(name)
@@ -91,7 +120,7 @@ func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
 			switch t := v.(type) {
 			case *types.Const:
 				{
-					enums = append(enums, t.Val())
+					enums = append(enums, constantValueDoc{Value: t.Val(), doc: docMap[name]})
 				}
 			}
 		}
@@ -138,18 +167,24 @@ func toTypescriptType(t reflect.Type) string {
 	return t.String()
 }
 
-func getEnumStringValues(t reflect.Type, pkgNames ...string) []string {
+// x enum
+type xenum struct {
+	Name, Doc string
+}
+
+func getEnumStringValues(t reflect.Type, pkgNames ...string) []xenum {
 	if len(pkgNames) == 0 {
 		pkgNames = []string{t.PkgPath()}
 	}
 
-	enumStrValues := []string{}
+	enumStrValues := []xenum{}
 	for _, pkg := range pkgNames {
 		values, err := getEnumValues(pkg, t.String())
 		if err != nil {
 			panic(err)
 		}
-		for _, v := range values {
+		for _, xv := range values {
+			v := xv.Value
 			reflectValue := reflect.New(t).Elem()
 			newVal := constant.Val(v)
 			switch t.Kind() {
@@ -167,7 +202,7 @@ func getEnumStringValues(t reflect.Type, pkgNames ...string) []string {
 			}
 			strVal := fmt.Sprintf("%v", reflectValue)
 
-			enumStrValues = append(enumStrValues, strVal)
+			enumStrValues = append(enumStrValues, xenum{strVal, xv.doc})
 		}
 	}
 	return enumStrValues

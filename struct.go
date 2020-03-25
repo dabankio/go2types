@@ -5,7 +5,6 @@ import (
 	"io"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -23,7 +22,7 @@ var (
 	DefaultEnumTemplate = `
 {{.Indent}}//{{.T.PkgPath}}.{{.T.Name}}
 {{.Indent}}export enum {{.Name}} {
-{{$e := .}}{{range .Values}}{{$e.Indent}}  {{.}} = '{{.}}',
+{{$e := .}}{{range .Values}}{{$e.Indent}}  {{.Name}} = '{{.Name}}',{{if .Doc}} // {{.Doc}}{{end}}
 {{end}}{{.Indent}}}`
 )
 
@@ -40,7 +39,7 @@ type (
 	Struct struct {
 		// Template          string //render template
 		Indent string //whole block indent
-		Doc         string
+		Doc    string
 
 		Type          Kind
 		ReferenceName string
@@ -48,7 +47,7 @@ type (
 		Name          string
 		Fields        []*Field
 		InheritedType []string
-		Values        []string
+		Values        []xenum
 		T             reflect.Type
 	}
 )
@@ -114,15 +113,6 @@ func (s *Struct) RenderTo(w io.Writer) error {
 		return err
 	}
 	return tpl.Execute(w, s)
-}
-
-// JoinEnumValues .
-func (s *Struct) JoinEnumValues() string {
-	var quoted []string
-	for _, v := range s.Values {
-		quoted = append(quoted, strconv.Quote(v))
-	}
-	return strings.Join(quoted, " | ")
 }
 
 // RenderEnum .

@@ -22,7 +22,7 @@ var (
 	DefaultEnumTemplate = `
 {{.Indent}}//{{.T.PkgPath}}.{{.T.Name}}
 {{.Indent}}export enum {{.Name}} {
-{{$e := .}}{{range .Values}}{{$e.Indent}}  {{.Name}} = '{{.Name}}',{{if .Doc}} // {{.Doc}}{{end}}
+{{$e := .}}{{range .Values}}{{$e.Indent}}  {{.Name}} = '{{.Value}}',{{if .Doc}} // {{.Doc}}{{end}}
 {{end}}{{.Indent}}}`
 )
 

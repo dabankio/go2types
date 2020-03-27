@@ -69,6 +69,7 @@ func isEnum(t reflect.Type) bool {
 }
 
 type constantValueDoc struct {
+	name string
 	constant.Value
 	doc string
 }
@@ -119,9 +120,7 @@ func getEnumValues(pkgName, typename string) ([]constantValueDoc, error) {
 		if v != nil && baseTypename == typename {
 			switch t := v.(type) {
 			case *types.Const:
-				{
-					enums = append(enums, constantValueDoc{Value: t.Val(), doc: docMap[name]})
-				}
+				enums = append(enums, constantValueDoc{name: name, Value: t.Val(), doc: docMap[name]})
 			}
 		}
 	}
@@ -169,7 +168,7 @@ func toTypescriptType(t reflect.Type) string {
 
 // x enum
 type xenum struct {
-	Name, Doc string
+	Name, Value, Doc string
 }
 
 func getEnumStringValues(t reflect.Type, pkgNames ...string) []xenum {
@@ -202,7 +201,15 @@ func getEnumStringValues(t reflect.Type, pkgNames ...string) []xenum {
 			}
 			strVal := fmt.Sprintf("%v", reflectValue)
 
-			enumStrValues = append(enumStrValues, xenum{strVal, xv.doc})
+			x := xenum{strings.Trim(strVal, "\""), strVal, xv.doc}
+			for _, num := range "0123456789" {
+				if strings.HasPrefix(strVal, string(num)) {
+					x.Name = xv.name
+					break
+				}
+			}
+
+			enumStrValues = append(enumStrValues, x)
 		}
 	}
 	return enumStrValues

@@ -7,9 +7,11 @@ import (
 	"go/ast"
 	"go/constant"
 	"go/types"
+	"log"
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -74,6 +76,79 @@ type constantValueDoc struct {
 	doc string
 }
 
+// pkgName, type, name, doc
+type eleDoc struct {
+	pkg  string
+	name string // for type it is type name, for value it is var|const name
+	doc  string
+	typ  int
+}
+
+var pkgDocs = map[string][]eleDoc{} //key: pkgName, value: docs
+var pkgDocsLock sync.Mutex
+
+const (
+	docTypeType  = iota //doc for type
+	docTypeValue        //doc for value (const | var)
+)
+
+// get doc for type|value
+func getDoc(pkg, name string, typ int) string {
+	pkgDocsLock.Lock()
+	defer pkgDocsLock.Unlock()
+
+	docs, ok := pkgDocs[pkg]
+	if !ok {
+		res, err := packages.Load(&packages.Config{
+			Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedName | packages.LoadSyntax | packages.NeedSyntax,
+		}, pkg)
+		if err != nil {
+			log.Println("[warn] failed to load package", pkg)
+			return ""
+		}
+		for _, f := range res[0].Syntax {
+			for _, decl := range f.Decls {
+				switch decl := decl.(type) {
+				case *ast.GenDecl:
+					for _, spec := range decl.Specs {
+						switch spec := spec.(type) {
+						case *ast.TypeSpec:
+
+							// fmt.Println("[dbg] type spec", spec.Name.String(), decl.Doc.Text(), spec.Comment.Text(), spec.Doc.Text())
+							if decl.Doc.Text() != "" {
+								docs = append(docs, eleDoc{
+									pkg: pkg, name: spec.Name.String(), typ: docTypeType, doc: strings.TrimSpace(decl.Doc.Text()),
+								})
+								// fmt.Println("[dbg]", spec.Name.String(), spec.Doc.Text())
+							}
+							// fmt.Println("[dbg] try get doc", spec.Name, toJSON(spec.Doc))
+						case *ast.ValueSpec:
+							if spec.Doc.Text() != "" {
+								// fmt.Println("[dbg] try get doc", typename, spec.Names, spec.Doc.Text())
+								for _, name := range spec.Names {
+									// docMap[name.Name] = strings.TrimSpace(spec.Doc.Text())
+									docs = append(docs, eleDoc{
+										pkg: pkg, name: name.Name, typ: docTypeValue, doc: strings.TrimSpace(spec.Doc.Text()),
+									})
+								}
+							}
+						}
+					}
+				case *ast.FuncDecl:
+					// fmt.Println("[dbg] try get doc:", toJSON(decl.Doc))
+				}
+			}
+		}
+		pkgDocs[pkg] = docs
+	}
+	for _, doc := range docs {
+		if doc.typ == typ && doc.name == name {
+			return doc.doc
+		}
+	}
+	return ""
+}
+
 func getEnumValues(pkgName, typename string) ([]constantValueDoc, error) {
 	res, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedName | packages.LoadSyntax | packages.NeedSyntax,
@@ -86,30 +161,6 @@ func getEnumValues(pkgName, typename string) ([]constantValueDoc, error) {
 		return nil, errors.New("more than one result package")
 	}
 
-	docMap := map[string]string{} //doc map, <enumName, doc>
-	for _, f := range res[0].Syntax {
-		for _, decl := range f.Decls {
-			switch decl := decl.(type) {
-			case *ast.GenDecl:
-				for _, spec := range decl.Specs {
-					switch spec := spec.(type) {
-					case *ast.TypeSpec:
-						// fmt.Println("[dbg] try get doc", spec.Name, toJSON(spec.Doc))
-					case *ast.ValueSpec:
-						if spec.Doc.Text() != "" {
-							// fmt.Println("[dbg] try get doc", typename, spec.Names, spec.Doc.Text())
-							for _, name := range spec.Names {
-								docMap[name.Name] = strings.TrimSpace(spec.Doc.Text())
-							}
-						}
-					}
-				}
-			case *ast.FuncDecl:
-				// fmt.Println("[dbg] try get doc:", toJSON(decl.Doc))
-			}
-		}
-	}
-
 	pkg := res[0].Types.Scope()
 	// fmt.Println("dbg pkg.Names", pkg.Names())
 	// fmt.Println("[dbg] info.Types ", info.Types)
@@ -120,7 +171,7 @@ func getEnumValues(pkgName, typename string) ([]constantValueDoc, error) {
 		if v != nil && baseTypename == typename {
 			switch t := v.(type) {
 			case *types.Const:
-				enums = append(enums, constantValueDoc{name: name, Value: t.Val(), doc: docMap[name]})
+				enums = append(enums, constantValueDoc{name: name, Value: t.Val(), doc: getDoc(pkgName, name, docTypeValue)})
 			}
 		}
 	}

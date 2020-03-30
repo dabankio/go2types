@@ -147,6 +147,7 @@ func (s *Worker) AddTypeEnum(t reflect.Type, name, namespace string, pkgNames ..
 	}
 	out = MakeStruct(t, name, namespace)
 	out.Values = getEnumStringValues(t, pkgNames...)
+	out.Doc = getDoc(t.PkgPath(), t.Name(), docTypeType)
 	out.Type = Enum
 	s.seen[t] = out
 	s.structs = append(s.structs, out)

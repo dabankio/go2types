@@ -90,9 +90,10 @@ var pkgDocsLock sync.Mutex
 const (
 	docTypeType  = iota //doc for type
 	docTypeValue        //doc for value (const | var)
+	docTypeStructField
 )
 
-// get doc for type|value
+// get doc for type|value|filed(structName.FieldName)
 func getDoc(pkg, name string, typ int) string {
 	pkgDocsLock.Lock()
 	defer pkgDocsLock.Unlock()
@@ -121,7 +122,29 @@ func getDoc(pkg, name string, typ int) string {
 								})
 								// fmt.Println("[dbg]", spec.Name.String(), spec.Doc.Text())
 							}
-							// fmt.Println("[dbg] try get doc", spec.Name, toJSON(spec.Doc))
+							if strTyp, ok := spec.Type.(*ast.StructType); ok && len(strTyp.Fields.List) > 0 {
+								for _, f := range strTyp.Fields.List {
+									var _doc string
+
+									var comment []*ast.Comment
+									if f.Doc != nil && len(f.Doc.List) >= 0 {
+										comment = append(comment, f.Doc.List...)
+									}
+									if f.Comment != nil && len(f.Comment.List) >= 0 {
+										comment = append(comment, f.Comment.List...)
+									}
+									if len(comment) == 0 {
+										continue
+									}
+									for _, d := range comment {
+										_doc = _doc + strings.TrimLeft(d.Text, "//") + ","
+									}
+									_name := spec.Name.Name + "." + f.Names[0].Name
+									docs = append(docs, eleDoc{
+										pkg: pkg, name: _name, typ: docTypeStructField, doc: _doc,
+									})
+								}
+							}
 						case *ast.ValueSpec:
 							if spec.Doc.Text() != "" {
 								// fmt.Println("[dbg] try get doc", typename, spec.Names, spec.Doc.Text())
@@ -276,6 +299,9 @@ func hasLowerCasePrefix(s string) bool {
 func structFieldTags(sf reflect.StructField) string {
 	var tags []string
 	for _, tag := range DocTags {
+		if strings.Contains(tag, "pg") {
+			continue
+		}
 		if t := sf.Tag.Get(tag); t != "" {
 			tags = append(tags, fmt.Sprintf("%s:%v", tag, t))
 		}

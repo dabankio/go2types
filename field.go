@@ -47,7 +47,7 @@ func (t TagJSON) defaultIfNameEmpty(name string) string {
 }
 
 // ParseField return: parsed field, isAnomynous, isStruct
-func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Type]string) *Field {
+func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Type]string, structType reflect.Type) *Field {
 	tagJSON := parseTagJSON(sf.Tag.Get("json"))
 
 	typ, kind := sf.Type, sf.Type.Kind()
@@ -59,7 +59,8 @@ func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Type]string) *Fie
 		IsOptional: tagJSON.Exists && tagJSON.Omitempty,
 		CanBeNull:  !tagJSON.Omitempty && (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map),
 		IsDate:     isDate(typ),
-		Doc:        structFieldTags(sf),
+		// Doc:        structFieldTags(sf),
+		Doc: structFieldTags(sf) + getDoc(structType.PkgPath(), structType.Name()+"."+sf.Name, docTypeStructField),
 	}
 
 	if v, ok := go2tsTypes[typ]; ok {

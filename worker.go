@@ -82,7 +82,7 @@ func (s *Worker) addType(t reflect.Type, name, namespace string) (out *Struct) {
 	for i := 0; i < numField; i++ {
 		sf := t.Field(i)
 
-		parsedField := ParseField(sf, CustomTypeMap)
+		parsedField := ParseField(sf, CustomTypeMap, out.T)
 		if parsedField.Omitted {
 			continue
 		}

@@ -59,8 +59,7 @@ func ParseField(sf reflect.StructField, go2tsTypes map[reflect.Type]string, stru
 		IsOptional: tagJSON.Exists && tagJSON.Omitempty,
 		CanBeNull:  !tagJSON.Omitempty && (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map),
 		IsDate:     isDate(typ),
-		// Doc:        structFieldTags(sf),
-		Doc: structFieldTags(sf) + getDoc(structType.PkgPath(), structType.Name()+"."+sf.Name, docTypeStructField),
+		Doc:        structFieldTags(sf) + getDoc(structType.PkgPath(), structType.Name()+"."+sf.Name, docTypeStructField),
 	}
 
 	if v, ok := go2tsTypes[typ]; ok {

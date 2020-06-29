@@ -116,14 +116,21 @@ func getDoc(pkg, name string, typ int) string {
 						case *ast.TypeSpec:
 
 							// fmt.Println("[dbg] type spec", spec.Name.String(), decl.Doc.Text(), spec.Comment.Text(), spec.Doc.Text())
+							var _typeDoc string
 							if decl.Doc.Text() != "" {
-								docs = append(docs, eleDoc{
-									pkg: pkg, name: spec.Name.String(), typ: docTypeType, doc: strings.TrimSpace(decl.Doc.Text()),
-								})
+								_typeDoc = strings.TrimSpace(decl.Doc.Text())
 								// fmt.Println("[dbg]", spec.Name.String(), spec.Doc.Text())
 							}
-							if strTyp, ok := spec.Type.(*ast.StructType); ok && len(strTyp.Fields.List) > 0 {
-								for _, f := range strTyp.Fields.List {
+							if spec.Comment != nil && len(spec.Comment.List) > 0 {
+								for _, x := range spec.Comment.List {
+									_typeDoc = _typeDoc + strings.TrimSpace(x.Text)
+								}
+							}
+							docs = append(docs, eleDoc{
+								pkg: pkg, name: spec.Name.String(), typ: docTypeType, doc: _typeDoc,
+							})
+							if structTyp, ok := spec.Type.(*ast.StructType); ok && len(structTyp.Fields.List) > 0 {
+								for _, f := range structTyp.Fields.List {
 									var _doc string
 
 									var comment []*ast.Comment

@@ -12,8 +12,7 @@ import (
 // default template
 var (
 	DefaultStructTemplate = `{{if .NotIgnored}}
-{{.Indent}}//{{.T.PkgPath}}.{{.T.Name}}{{if .Doc}}
-{{.Indent}}/*** {{.Doc}} */{{end}}
+{{if .Doc}}{{.Indent}}/*** {{.Doc}} */{{end}}
 {{.Indent}}export interface {{.Name}} {{if.InheritedType}}extends {{.JoinInheritedTypes}}{{end}}{
 {{range .Fields}}{{.MustRender}}
 {{end}}{{.Indent}}}
@@ -83,9 +82,7 @@ func MakeStruct(t reflect.Type, name, namespace string) *Struct {
 	}
 
 	if t.Kind() == reflect.Struct {
-		if docField, ok := t.FieldByName(DocField); ok {
-			ret.Doc = structFieldTags(docField)
-		}
+		ret.Doc = getDoc(t.PkgPath(), t.Name(), docTypeType)
 	}
 	return ret
 
